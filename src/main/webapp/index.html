@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SURFnet - Open Onderwijs Api (OOAPI) - Demo applicatie</title>
+
+    <!-- Bootstrap -->
+    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    <script src="/auth/js/keycloak.js"></script>    
+  </head>
+	<body role="document">
+	    <!-- Fixed navbar -->
+	    <nav class="navbar navbar-inverse navbar-fixed-top">
+	      <div class="container">
+	        <div class="navbar-header">
+	          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+	            <span class="sr-only">Toggle navigation</span>
+	            <span class="icon-bar"></span>
+	            <span class="icon-bar"></span>
+	            <span class="icon-bar"></span>
+	          </button>
+	          <a class="navbar-brand" href="#">OOAPI Demo</a>
+	        </div>
+	        <div id="navbar" class="navbar-collapse collapse">
+	          <ul class="nav navbar-nav">
+	            <li><a href="#" onclick="keycloak.login();return false;">Inloggen</a></li>
+	            <li><a href="#" onclick="keycloak.logout();return false;">Uitloggen</a></li>
+	            <li class="dropdown">
+	              <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Keycloak<span class="caret"></span></a>
+	              <ul class="dropdown-menu">
+	                <li class="dropdown-header">Show Keycloak Details</li>
+	                <li><a href="#" onclick="loadProfile(); return false;">Get Profile</a></li>
+	                <li><a href="#" onclick="loadUserInfo(); return false;">Get User Info</a></li>
+	                <li><a href="#" onclick="output(keycloak.tokenParsed); return false;">Show Token</a></li>
+	                <li><a href="#" onclick="output(keycloak.refreshTokenParsed); return false;">Show Refresh Token</a></li>
+	                <li><a href="#" onclick="output(keycloak.idTokenParsed); return false;">Show ID Token</a></li>
+	                <li><a href="#" onclick="showExpires(); return false;">Show Expires</a></li>
+	                <li><a href="#" onclick="output(keycloak); return false;">Show Details</a></li>
+	                <li role="separator" class="divider"></li>
+	                <li class="dropdown-header">Actions</li>
+	                <li><a href="#" onclick="keycloak.register(); return false;">Refresh Token</a></li>
+	                <li><a href="#" onclick="refreshToken(30); return false;">Refresh Token (if <30s validity)</a></li>	                
+	                <li role="separator" class="divider"></li>
+	                <li class="dropdown-header">URL's</li>
+	                <li><a href="#" onclick="output(keycloak.createLoginUrl()); return false;">Show Login URL</a></li>
+	                <li><a href="#" onclick="output(keycloak.createLogoutUrl()); return false;">Show Logout URL</a></li>
+	                <li><a href="#" onclick="output(keycloak.createRegisterUrl()); return false;">Show Register URL</a></li>
+	              </ul>
+	            </li>
+	          </ul>
+	        </div><!--/.nav-collapse -->
+	      </div>
+	    </nav>
+ 
+    	<div class="container theme-showcase" role="main">
+    		<br>	
+			<div class="page-header">
+				<h1>SURFnet - Open Onderwijs API (OOAPI) - Demo client</h1>
+				<p>Demo applicatie voor het aanroepen van de OOAPI van In Holland. Via JBoss Apiman en JBoss Keycloak is de OOAPI van In Holland beveiligd middels SURFconext</p>
+			</div>
+			
+			<div class="dropdown">
+			  <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown">API Call
+			  <span class="caret"></span></button>
+			  <ul class="dropdown-menu">
+			    <li><a href="#" onclick="callApiman('/apiman-gateway/SURFnet/InHollandTest/1.0/persons/')">SURFnet - In Holland - v1.0 - Alle personen</a></li>
+			    <li><a href="#" onclick="callApiman('/apiman-gateway/SURFnet/InHollandTest/1.0/persons/?id=1')">SURFnet - In Holland - v1.0 - 1e persoon</a></li>
+			  </ul>
+			</div>
+			<div class="page-header">
+          <div class="panel panel-default">
+            <div class="panel-heading">
+              <h3 class="panel-title">Result</h3>
+            </div>
+            <div class="panel-body">
+            	<pre id="output"></pre>
+            </div>
+          </div>			
+          <div class="panel panel-default">
+            <div class="panel-heading">
+              <h3 class="panel-title">Events</h3>
+            </div>
+            <div class="panel-body">
+            	<pre id="events"></pre>
+            </div>
+          </div>			
+          </div>
+		</div>
+		<script>
+		
+			function callApiman(url) {
+				event("Started calling: " + url);
+				var client = new XMLHttpRequest();
+				client.open("GET", url, false);
+				client.setRequestHeader("Accept", "application/json");
+				client.setRequestHeader("Authorization", "Bearer " + keycloak.token);
+				client.send();
+				response = client.responseText		
+				if (response) {
+				    try {
+				        output(JSON.parse(response));
+				    } catch(e) {
+				    	output(response)
+			    	}
+				}
+				event("Finished calling: " + url);				
+			}
+		
+		    function loadProfile() {
+		        keycloak.loadUserProfile().success(function(profile) {
+		            output(profile);
+		        }).error(function() {
+		            output('Failed to load profile');
+		        });
+		    }
+		
+		    function loadUserInfo() {
+		        keycloak.loadUserInfo().success(function(userInfo) {
+		            output(userInfo);
+		        }).error(function() {
+		            output('Failed to load user info');
+		        });
+		    }
+		
+		    function refreshToken(minValidity) {
+		        keycloak.updateToken(minValidity).success(function(refreshed) {
+		            if (refreshed) {
+		                output(keycloak.tokenParsed);
+		            } else {
+		                output('Token not refreshed, valid for ' + Math.round(keycloak.tokenParsed.exp + keycloak.timeSkew - new Date().getTime() / 1000) + ' seconds');
+		            }
+		        }).error(function() {
+		            output('Failed to refresh token');
+		        });
+		    }
+		
+		    function showExpires() {
+		        if (!keycloak.tokenParsed) {
+		            output("Not authenticated");
+		            return;
+		        }
+		
+		        var o = 'Token Expires:\t\t' + new Date((keycloak.tokenParsed.exp + keycloak.timeSkew) * 1000).toLocaleString() + '\n';
+		        o += 'Token Expires in:\t' + Math.round(keycloak.tokenParsed.exp + keycloak.timeSkew - new Date().getTime() / 1000) + ' seconds\n';
+		
+		        if (keycloak.refreshTokenParsed) {
+		            o += 'Refresh Token Expires:\t' + new Date((keycloak.refreshTokenParsed.exp + keycloak.timeSkew) * 1000).toLocaleString() + '\n';
+		            o += 'Refresh Expires in:\t' + Math.round(keycloak.refreshTokenParsed.exp + keycloak.timeSkew - new Date().getTime() / 1000) + ' seconds';
+		        }
+		
+		        output(o);
+		    }
+		
+		    function output(data) {
+		        if (typeof data === 'object') {
+		            data = JSON.stringify(data, null, '  ');
+		        }
+		        document.getElementById('output').innerHTML = data;
+		    }
+		
+		    function event(event) {
+		        var e = document.getElementById('events').innerHTML;
+		        document.getElementById('events').innerHTML = new Date().toLocaleString() + "\t" + event + "\n" + e;
+		    }
+		
+		    var keycloak = Keycloak();
+		
+		    keycloak.onAuthSuccess = function () {
+		        event('Auth Success');
+		    };
+		
+		    keycloak.onAuthError = function () {
+		        event('Auth Error');
+		    };
+		
+		    keycloak.onAuthRefreshSuccess = function () {
+		        event('Auth Refresh Success');
+		    };
+		
+		    keycloak.onAuthRefreshError = function () {
+		        event('Auth Refresh Error');
+		    };
+		
+		    keycloak.onAuthLogout = function () {
+		        event('Auth Logout');
+		    };
+		
+		    keycloak.onTokenExpired = function () {
+		        event('Access token expired.');
+		    };
+		
+		    // Flow can be changed to 'implicit' or 'hybrid', but then client must enable implicit flow in admin console too 
+		    var initOptions = {
+		        responseMode: 'fragment',
+		        flow: 'standard'
+		    };
+		
+		    keycloak.init(initOptions).success(function(authenticated) {
+		        output('Init Success (' + (authenticated ? 'Authenticated' : 'Not Authenticated') + ')');
+		    }).error(function() {
+		        output('Init Error');
+		    });
+		
+		</script>	
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+		<script src="bootstrap/js/bootstrap.min.js"></script>
+	</body>
+</html>
